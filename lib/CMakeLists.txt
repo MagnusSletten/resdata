@@ -215,6 +215,7 @@ endif()
 
 add_executable(
   rd_test_suite
+  tests/test_rd_type.cpp
   tests/test_rd_grid_regular.cpp
   tests/test_nnc_info.cpp
   tests/test_rd_grid_nnc_lgr.cpp

@@ -42,7 +42,8 @@ rd_type_enum rd_type_get_type_python(const rd_data_type *rd_type) {
 }
 
 const char *rd_type_alloc_name_python(const rd_data_type *rd_type) {
-    return rd_type_alloc_name(*rd_type);
+    std::string type_name = rd_type_name(*rd_type);
+    return util_alloc_string_copy(type_name.c_str());
 }
 
 size_t rd_type_get_sizeof_iotype_python(const rd_data_type *rd_type) {
