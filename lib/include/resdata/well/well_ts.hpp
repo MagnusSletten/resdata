@@ -1,26 +1,18 @@
-#ifndef ERT_WELL_TS_H
-#define ERT_WELL_TS_H
+#pragma once
 
 #include <resdata/well/well_state.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+class WellTimeLine {
+    std::string well_name;
+    std::vector<well_state_ptr> ts;
 
-typedef struct well_ts_struct well_ts_type;
+public:
+    explicit WellTimeLine(std::string well_name) : well_name(well_name) {};
 
-void well_ts_free(well_ts_type *well_ts);
-void well_ts_add_well(well_ts_type *well_ts, well_state_type *well_state);
-well_ts_type *well_ts_alloc(const char *well_name);
-well_state_type *well_ts_iget_state(const well_ts_type *well_ts, int index);
-int well_ts_get_size(const well_ts_type *well_ts);
-const char *well_ts_get_name(const well_ts_type *well_ts);
-well_state_type *well_ts_get_last_state(const well_ts_type *well_ts);
-
-#ifdef __cplusplus
-}
-#endif
-#include <memory>
-
-using well_ts_ptr = std::unique_ptr<well_ts_type, decltype(&well_ts_free)>;
-#endif
+    void add_well(well_state_ptr &&well_state) {
+        ts.push_back(std::move(well_state));
+    }
+    std::string name() { return well_name; }
+    well_state_type *at(size_t n) { return ts.at(n).get(); }
+    size_t size() { return ts.size(); }
+};

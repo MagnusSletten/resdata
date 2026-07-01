@@ -33,9 +33,9 @@ int main(int argc, char **argv) {
         // List all wells:
         for (int iwell = 0; iwell < well_info_get_num_wells(well_info);
              iwell++) {
-            well_ts_type *well_ts = well_info_get_ts(
+            auto well_ts = well_info_get_ts(
                 well_info, well_info_iget_well_name(well_info, iwell));
-            well_state_type *well_state = well_ts_get_last_state(well_ts);
+            well_state_type *well_state = well_ts->at(well_ts->size() - 1);
             test_assert_not_NULL(well_state);
         }
         well_info_free(well_info);

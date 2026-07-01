@@ -50,7 +50,7 @@ class WellInfo(BaseCClass):
                 )
             well_name = _well_info._iget_well_name(self, item)
 
-        return WellTimeLine.createCReference(_well_info._get_ts(self, well_name), self)
+        return _well_info._get_ts(self, well_name)
 
     def __iter__(self) -> Iterator[WellTimeLine]:
         index = 0

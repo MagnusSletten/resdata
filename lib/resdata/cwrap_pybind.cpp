@@ -319,21 +319,6 @@ template <> well_segment_type *from_cwrap<well_segment_type>(py::handle obj) {
     return cast_cwrap<well_segment_type>(obj);
 }
 
-py::object WellTimeLine() {
-    static py::object cls;
-    if (!cls) {
-        cls = py::module_::import("resdata.well").attr("WellTimeLine");
-    }
-    return cls;
-}
-template <> well_ts_type *from_cwrap<well_ts_type>(py::handle obj) {
-    if (!py::isinstance(obj, WellTimeLine()))
-        throw py::type_error("Expected WellTimeLine, got " +
-                             static_cast<std::string>(py::repr(obj)));
-
-    return cast_cwrap<well_ts_type>(obj);
-}
-
 py::object ResdataGrav() {
     static py::object cls;
     if (!cls) {

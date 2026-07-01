@@ -93,7 +93,7 @@ using well_info_ptr =
     std::unique_ptr<well_info_type, decltype(&well_info_free)>;
 
 well_info_ptr make_well_info(const rd_grid_ptr &grid) {
-    return well_info_ptr(well_info_alloc(grid.get()), well_info_free);
+    return {well_info_alloc(grid.get()), well_info_free};
 }
 
 } // namespace

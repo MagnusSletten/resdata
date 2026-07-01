@@ -15,8 +15,8 @@ void well_info_load_rst_resfile(well_info_type *well_info,
                                 bool load_segment_information);
 void well_info_free(well_info_type *well_info);
 
-well_ts_type *well_info_get_ts(const well_info_type *well_info,
-                               const char *well_name);
+std::shared_ptr<WellTimeLine> well_info_get_ts(const well_info_type *well_info,
+                                               const char *well_name);
 int well_info_get_num_wells(const well_info_type *well_info);
 const char *well_info_iget_well_name(const well_info_type *well_info,
                                      int well_index);

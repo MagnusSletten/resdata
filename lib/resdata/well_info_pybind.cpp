@@ -49,12 +49,9 @@ PYBIND11_MODULE(_well_info, m) {
         return well_info_has_well(from_cwrap<well_info_type>(self),
                                   well_name.c_str());
     });
-    m.def(
-        "_get_ts",
-        [](py::handle self, std::string well_name) {
-            return reinterpret_cast<std::uintptr_t>(well_info_get_ts(
-                from_cwrap<well_info_type>(self), well_name.c_str()));
-        },
-        py::return_value_policy::reference);
+    m.def("_get_ts", [](py::handle self, std::string well_name) {
+        return well_info_get_ts(from_cwrap<well_info_type>(self),
+                                well_name.c_str());
+    });
 }
 } // namespace

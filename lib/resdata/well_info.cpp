@@ -34,13 +34,13 @@
     well_info_type: This is the container type which holds information
        about all the wells; at all times.
 
-    well_ts_type: The status and properties of a well can typically
-       change throughout the simulation; the datatype well_ts_type
+    WellTimeLine: The status and properties of a well can typically
+       change throughout the simulation; the datatype WellTimeLine
        contains a time series for one well.
 
     well_state_type: The well_state_type datatype contains the
        state/properties of one well at one particular instant of
-       time. The well_state.c file contains further documentation of
+       time. The well_state.hpp file contains further documentation of
        the concepts connections, branches and segments.
 
 
@@ -159,7 +159,7 @@
 #define WELL_INFO_TYPE_ID 91777451
 
 struct well_info_struct {
-    std::map<std::string, well_ts_ptr>
+    std::map<std::string, std::shared_ptr<WellTimeLine>>
         wells;                           /* well_ts indexed by well name. */
     std::vector<std::string> well_names; /* A list of all the well names. */
     const rd_grid_type *grid;
@@ -182,28 +182,9 @@ bool well_info_has_well(well_info_type *well_info, const char *well_name) {
     return true;
 }
 
-well_ts_type *well_info_get_ts(const well_info_type *well_info,
-                               const char *well_name) {
-    return well_info->wells.at(well_name).get();
-}
-
-static void well_info_add_new_ts(well_info_type *well_info,
-                                 const char *well_name) {
-    well_info->wells.emplace(
-        well_name, well_ts_ptr{well_ts_alloc(well_name), well_ts_free});
-    well_info->well_names.push_back(well_name);
-}
-
-static void well_info_add_state(well_info_type *well_info,
-                                well_state_type *well_state) {
-    const char *well_name = well_state_get_name(well_state);
-    if (!well_info_has_well(well_info, well_name))
-        well_info_add_new_ts(well_info, well_name);
-
-    {
-        well_ts_type *well_ts = well_info_get_ts(well_info, well_name);
-        well_ts_add_well(well_ts, well_state);
-    }
+std::shared_ptr<WellTimeLine> well_info_get_ts(const well_info_type *well_info,
+                                               const char *well_name) {
+    return well_info->wells.at(well_name);
 }
 
 /*
@@ -292,13 +273,18 @@ static void well_info_add_wells2(well_info_type *well_info,
     close_guard close_stream_guard(rst_view);
     auto global_header = RSTHead::read(rst_view, report_nr);
     for (int well_nr = 0; well_nr < global_header.nwells; well_nr++) {
-        std::unique_ptr<well_state_type, decltype(&well_state_free)> well_state(
+        well_state_ptr well_state(
             well_state_alloc_from_file2(rst_view, well_info->grid, report_nr,
-                                        well_nr, load_segment_information),
-            well_state_free);
+                                        well_nr, load_segment_information));
         if (well_state) {
-            well_info_add_state(well_info, well_state.get());
-            well_state.release();
+            const char *well_name = well_state_get_name(well_state.get());
+            if (!well_info_has_well(well_info, well_name)) {
+                well_info->wells[well_name] =
+                    std::make_shared<WellTimeLine>(well_name);
+                well_info->well_names.push_back(well_name);
+            }
+            well_info_get_ts(well_info, well_name)
+                ->add_well(std::move(well_state));
         }
     }
 }

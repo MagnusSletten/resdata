@@ -88,7 +88,6 @@ add_library(
   resdata/well_state.cpp
   resdata/well_conn.cpp
   resdata/well_info.cpp
-  resdata/well_ts.cpp
   resdata/well_segment.cpp
   resdata/well_segment_collection.cpp
   resdata/well_branch_collection.cpp
@@ -204,7 +203,7 @@ add_resdata_pybind_module(_file rd_file_pybind.cpp resdata/resfile)
 add_resdata_pybind_module(_fortio fortio_pybind.cpp resdata/resfile)
 add_resdata_pybind_module(_well_info well_info_pybind.cpp resdata/well)
 add_resdata_pybind_module(_well_state well_state_pybind.cpp resdata/well)
-add_resdata_pybind_module(_well_time_line well_ts_pybind.cpp resdata/well)
+add_resdata_pybind_module(well_time_line well_ts_pybind.cpp resdata/well)
 add_resdata_pybind_module(_well_connection well_conn_pybind.cpp resdata/well)
 add_resdata_pybind_module(_well_segment well_segment_pybind.cpp resdata/well)
 add_resdata_pybind_module(_subsidence rd_subsidence_pybind.cpp

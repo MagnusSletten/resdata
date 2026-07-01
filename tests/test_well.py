@@ -1400,11 +1400,6 @@ def test_that_well_segment_cannot_directly_be_constructed():
         WellSegment()
 
 
-def test_that_well_timeline_cannot_directly_be_constructed():
-    with pytest.raises(NotImplementedError):
-        WellTimeLine()
-
-
 def test_that_non_existent_well_file_raises_os_error(grid, tmp_path):
     well_info = WellInfo(grid)
     with pytest.raises(OSError, match="No such file"):
