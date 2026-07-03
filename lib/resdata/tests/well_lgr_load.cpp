@@ -35,8 +35,8 @@ int main(int argc, char **argv) {
              iwell++) {
             auto well_ts = well_info_get_ts(
                 well_info, well_info_iget_well_name(well_info, iwell));
-            well_state_type *well_state = well_ts->at(well_ts->size() - 1);
-            test_assert_not_NULL(well_state);
+            auto well_state = well_ts->at(well_ts->size() - 1);
+            test_assert_not_NULL(well_state.get());
         }
         well_info_free(well_info);
     }

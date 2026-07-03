@@ -4,15 +4,15 @@
 
 class WellTimeLine {
     std::string well_name;
-    std::vector<well_state_ptr> ts;
+    std::vector<std::shared_ptr<WellState>> ts;
 
 public:
     explicit WellTimeLine(std::string well_name) : well_name(well_name) {};
 
-    void add_well(well_state_ptr &&well_state) {
-        ts.push_back(std::move(well_state));
+    void add_well(std::shared_ptr<WellState> &well_state) {
+        ts.push_back(well_state);
     }
     std::string name() { return well_name; }
-    well_state_type *at(size_t n) { return ts.at(n).get(); }
+    std::shared_ptr<WellState> at(size_t n) { return ts.at(n); }
     size_t size() { return ts.size(); }
 };

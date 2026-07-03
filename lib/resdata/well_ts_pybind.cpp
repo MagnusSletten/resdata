@@ -19,7 +19,7 @@ PYBIND11_MODULE(well_time_line, m) {
         .def("__len__", &WellTimeLine::size)
         .def(
             "__getitem__",
-            [](py::object py_self, py::int_ index) -> py::object {
+            [](py::object py_self, py::int_ index) {
                 auto &self = py_self.cast<WellTimeLine &>();
                 if (index < py::int_(0))
                     index += py::int_(self.size());
@@ -28,10 +28,7 @@ PYBIND11_MODULE(well_time_line, m) {
                     throw py::index_error(
                         fmt::format("Index must be in range 0 <= {} < {}",
                                     index.cast<long>(), self.size()));
-                return WellState().attr("createCReference")(
-                    reinterpret_cast<std::uintptr_t>(
-                        self.at(index.cast<size_t>())),
-                    py_self);
+                return self.at(index.cast<size_t>());
             },
             py::arg("index"))
         .def("__repr__", [](WellTimeLine &self) {

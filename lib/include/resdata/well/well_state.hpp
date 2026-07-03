@@ -1,13 +1,15 @@
 #pragma once
+
 #include <ctime>
 
+#include <map>
 #include <vector>
 #include <string>
 #include <memory>
-#include <map>
 
 #include <resdata/rd_file.hpp>
 #include <resdata/rd_grid.hpp>
+#include <resdata/rd_units.hpp>
 
 #include <resdata/well/well_conn.hpp>
 #include <resdata/well/well_const.hpp>
@@ -90,11 +92,10 @@ a grid.
 */
 
 /**
-   The well_state_type structure contains state information about one
+   The WellState structure contains state information about one
    well for one particular point in time.
 */
-struct well_state_struct {
-    UTIL_TYPE_ID_DECLARATION;
+class WellState {
     std::string name;
     time_t valid_from_time;
     int valid_from_report;
@@ -118,70 +119,89 @@ struct well_state_struct {
         index_wellhead; // An well_conn_type instance representing the wellhead - indexed by grid_nr.
     std::map<std::string, well_conn_type *>
         name_wellhead; // An well_conn_type instance representing the wellhead - indexed by lgr_name.
+
+    void add_wellhead(const RSTHead &header, const rd_kw_type *iwel_kw,
+                      int well_nr, const std::string &grid_name, int grid_nr);
+    bool add_rates(rd_file_view_type *rst_view, int well_nr);
+    int get_lgr_well_nr(const rd_file_view_type *file_view);
+    void add_connections(const rd_file_view_type *rst_view,
+                         const std::string &grid_name, int grid_nr,
+                         int well_nr);
+    void add_global_connections(const rd_file_view_type *rst_view, int well_nr);
+    void add_LGR_connections(const rd_grid_type *grid,
+                             rd_file_view_type *file_view);
+    well_conn_type *get_wellhead(const std::string &grid_name) {
+        const auto it = name_wellhead.find(grid_name);
+        return it != name_wellhead.end() ? it->second : nullptr;
+    }
+
+public:
+    WellState(std::string well_name, int global_well_nr, bool open,
+              well_type_enum type, int report_nr, time_t valid_from);
+    double get_oil_rate() { return oil_rate; }
+    double get_gas_rate() { return gas_rate; }
+    double get_water_rate() { return water_rate; }
+    double get_volume_rate() { return volume_rate; }
+    int get_report_nr() { return valid_from_report; }
+    bool is_MSW() { return is_MSW_well; }
+    well_type_enum get_type() { return type; }
+    int get_well_nr() { return global_well_nr; }
+    std::string get_name() { return name; }
+    bool is_open() { return open; }
+    time_t get_sim_time() { return valid_from_time; }
+    double get_oil_rate_si() {
+        return oil_rate * liquid_conversion_factor(unit_system);
+    }
+    double get_gas_rate_si() {
+        return gas_rate * gas_conversion_factor(unit_system);
+    }
+    double get_water_rate_si() {
+        return water_rate * liquid_conversion_factor(unit_system);
+    }
+    double get_volume_rate_si() {
+        return volume_rate * liquid_conversion_factor(unit_system);
+    }
+    bool has_segment_data() { return num_segments() > 0; }
+
+    int num_segments() {
+        return well_segment_collection_get_size(segments.get());
+    }
+
+    well_segment_collection_type *get_segments() { return segments.get(); }
+
+    well_branch_collection_type *get_branches() { return branches.get(); }
+
+    well_conn_type *get_global_wellhead() {
+        return get_wellhead(RD_GRID_GLOBAL_GRID);
+    }
+
+    bool has_grid_connections(const std::string &grid_name) {
+        return (connections.find(grid_name) != connections.end());
+    }
+    bool has_global_connections() {
+        return has_grid_connections(RD_GRID_GLOBAL_GRID);
+    }
+    void add_connections(const rd_grid_type *grid, rd_file_view_type *rst_view,
+                         int well_nr);
+    bool add_MSW(rd_file_view_type *rst_view, int well_nr,
+                 bool load_segment_information);
+
+    static std::shared_ptr<WellState>
+    read_wells_in_restart(rd_file_type *rd_file, const rd_grid_type *grid,
+                          int report_nr, int global_well_nr,
+                          bool load_segment_information);
+    static std::shared_ptr<WellState>
+    read_wells_in_restart(rd_file_view_type *file_view,
+                          const rd_grid_type *grid, int report_nr,
+                          int global_well_nr, bool load_segment_information);
+    std::vector<well_conn_ptr> *
+    get_grid_connections(const std::string &grid_name) {
+        auto it = connections.find(grid_name);
+        return it != connections.end() ? &it->second : nullptr;
+    }
+    const std::vector<well_conn_ptr> *get_global_connections() {
+        return get_grid_connections(RD_GRID_GLOBAL_GRID);
+    }
 };
 
-typedef struct well_state_struct well_state_type;
-
-well_state_type *well_state_alloc(const char *well_name, int global_well_nr,
-                                  bool open, well_type_enum type, int report_nr,
-                                  time_t valid_from);
-well_state_type *well_state_alloc_from_file(rd_file_type *rd_file,
-                                            const rd_grid_type *grid,
-                                            int report_step, int well_nr,
-                                            bool load_segment_information);
-well_state_type *well_state_alloc_from_file2(rd_file_view_type *file_view,
-                                             const rd_grid_type *grid,
-                                             int report_nr, int global_well_nr,
-                                             bool load_segment_information);
-
-void well_state_add_connections2(well_state_type *well_state,
-                                 const rd_grid_type *grid,
-                                 rd_file_view_type *rst_view, int well_nr);
-
-bool well_state_add_MSW2(well_state_type *well_state,
-                         rd_file_view_type *rst_view, int well_nr,
-                         bool load_segment_information);
-
-bool well_state_is_MSW(const well_state_type *well_state);
-
-bool well_state_has_segment_data(const well_state_type *well_state);
-
-well_segment_collection_type *
-well_state_get_segments(const well_state_type *well_state);
-well_branch_collection_type *
-well_state_get_branches(const well_state_type *well_state);
-
-void well_state_free(well_state_type *well);
-const char *well_state_get_name(const well_state_type *well);
-int well_state_get_report_nr(const well_state_type *well_state);
-time_t well_state_get_sim_time(const well_state_type *well_state);
-well_type_enum well_state_get_type(const well_state_type *well_state);
-bool well_state_is_open(const well_state_type *well_state);
-int well_state_get_well_nr(const well_state_type *well_state);
-
-const well_conn_type *
-well_state_get_global_wellhead(const well_state_type *well_state);
 well_type_enum well_state_translate_rd_type_int(int int_type);
-
-bool well_state_has_grid_connections(const well_state_type *well_state,
-                                     const char *grid_name);
-bool well_state_has_global_connections(const well_state_type *well_state);
-
-double well_state_get_oil_rate(const well_state_type *well_state);
-double well_state_get_gas_rate(const well_state_type *well_state);
-double well_state_get_water_rate(const well_state_type *well_state);
-double well_state_get_volume_rate(const well_state_type *well_state);
-double well_state_get_water_rate_si(const well_state_type *well_state);
-double well_state_get_oil_rate_si(const well_state_type *well_state);
-double well_state_get_volume_rate_si(const well_state_type *well_state);
-double well_state_get_gas_rate_si(const well_state_type *well_state);
-
-UTIL_IS_INSTANCE_HEADER(well_state);
-
-const std::vector<well_conn_ptr> *
-well_state_get_grid_connections(const well_state_type *well_state,
-                                const std::string &grid_name);
-const std::vector<well_conn_ptr> *
-well_state_get_global_connections(const well_state_type *well_state);
-
-using well_state_ptr = std::unique_ptr<well_state_type>;

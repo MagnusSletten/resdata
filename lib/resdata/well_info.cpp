@@ -38,7 +38,7 @@
        change throughout the simulation; the datatype WellTimeLine
        contains a time series for one well.
 
-    well_state_type: The well_state_type datatype contains the
+    WellState: The WellState datatype contains the
        state/properties of one well at one particular instant of
        time. The well_state.hpp file contains further documentation of
        the concepts connections, branches and segments.
@@ -273,18 +273,18 @@ static void well_info_add_wells2(well_info_type *well_info,
     close_guard close_stream_guard(rst_view);
     auto global_header = RSTHead::read(rst_view, report_nr);
     for (int well_nr = 0; well_nr < global_header.nwells; well_nr++) {
-        well_state_ptr well_state(
-            well_state_alloc_from_file2(rst_view, well_info->grid, report_nr,
-                                        well_nr, load_segment_information));
+        auto well_state = WellState::read_wells_in_restart(
+            rst_view, well_info->grid, report_nr, well_nr,
+            load_segment_information);
         if (well_state) {
-            const char *well_name = well_state_get_name(well_state.get());
-            if (!well_info_has_well(well_info, well_name)) {
+            std::string well_name = well_state->get_name();
+            if (!well_info_has_well(well_info, well_name.c_str())) {
                 well_info->wells[well_name] =
                     std::make_shared<WellTimeLine>(well_name);
                 well_info->well_names.push_back(well_name);
             }
-            well_info_get_ts(well_info, well_name)
-                ->add_well(std::move(well_state));
+            well_info_get_ts(well_info, well_name.c_str())
+                ->add_well(well_state);
         }
     }
 }

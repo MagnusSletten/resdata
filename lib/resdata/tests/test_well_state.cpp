@@ -30,31 +30,26 @@ int main(int argc, char **argv) {
         bool open = false;
         well_type_enum type = RD_WELL_GAS_INJECTOR;
 
-        well_state_type *well_state = well_state_alloc(
-            well_name, global_well_nr, open, type, report_nr, valid_from);
-        test_assert_true(well_state_is_instance(well_state));
+        WellState well_state(well_name, global_well_nr, open, type, report_nr,
+                             valid_from);
 
-        test_assert_false(well_state_is_MSW(well_state));
-        test_assert_string_equal(well_name, well_state_get_name(well_state));
-        test_assert_int_equal(global_well_nr,
-                              well_state_get_well_nr(well_state));
-        test_assert_bool_equal(open, well_state_is_open(well_state));
-        test_assert_int_equal(type, well_state_get_type(well_state));
-        test_assert_int_equal(report_nr, well_state_get_report_nr(well_state));
-        test_assert_time_t_equal(valid_from,
-                                 well_state_get_sim_time(well_state));
+        test_assert_false(well_state.is_MSW());
+        test_assert_string_equal(well_name, well_state.get_name().c_str());
+        test_assert_int_equal(global_well_nr, well_state.get_well_nr());
+        test_assert_bool_equal(open, well_state.is_open());
+        test_assert_int_equal(type, well_state.get_type());
+        test_assert_int_equal(report_nr, well_state.get_report_nr());
+        test_assert_time_t_equal(valid_from, well_state.get_sim_time());
 
-        test_assert_NULL(well_state_get_global_connections(well_state));
-        test_assert_false(well_state_has_global_connections(well_state));
-        test_assert_NULL(well_state_get_grid_connections(well_state, "GRID"));
-        test_assert_false(well_state_has_grid_connections(well_state, "GRID"));
+        test_assert_NULL(well_state.get_global_connections());
+        test_assert_false(well_state.has_global_connections());
+        test_assert_NULL(well_state.get_grid_connections("GRID"));
+        test_assert_false(well_state.has_grid_connections("GRID"));
 
-        test_assert_double_equal(0.0, well_state_get_oil_rate(well_state));
-        test_assert_double_equal(0.0, well_state_get_gas_rate(well_state));
-        test_assert_double_equal(0.0, well_state_get_water_rate(well_state));
-        test_assert_double_equal(0.0, well_state_get_volume_rate(well_state));
-
-        well_state_free(well_state);
+        test_assert_double_equal(0.0, well_state.get_oil_rate());
+        test_assert_double_equal(0.0, well_state.get_gas_rate());
+        test_assert_double_equal(0.0, well_state.get_water_rate());
+        test_assert_double_equal(0.0, well_state.get_volume_rate());
     }
     exit(0);
 }
