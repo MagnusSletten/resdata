@@ -1,15 +1,12 @@
-#ifndef ERT_WELL_SEGMENT_H
-#define ERT_WELL_SEGMENT_H
+#pragma once
 
 #include <resdata/rd_kw.hpp>
 #include <resdata/rd_rsthead.hpp>
 
+#include <vector>
+
 #include <resdata/well/well_conn.hpp>
 #include <resdata/well/well_rseg_loader.hpp>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct well_segment_struct well_segment_type;
 
@@ -34,7 +31,8 @@ bool well_segment_has_grid_connections(const well_segment_type *segment,
                                        const char *grid_name);
 bool well_segment_has_global_grid_connections(const well_segment_type *segment);
 bool well_segment_add_connection(well_segment_type *segment,
-                                 const char *grid_name, well_conn_type *conn);
+                                 const char *grid_name,
+                                 std::shared_ptr<WellConnection> conn);
 double well_segment_get_depth(const well_segment_type *segment);
 double well_segment_get_length(const well_segment_type *segment);
 double well_segment_get_total_length(const well_segment_type *segment);
@@ -42,20 +40,14 @@ double well_segment_get_diameter(const well_segment_type *segment);
 
 UTIL_IS_INSTANCE_HEADER(well_segment);
 
-#ifdef __cplusplus
-}
-#include <vector>
-
 well_segment_type *well_segment_alloc_from_kw(
     const rd_kw_type *iseg_kw, const well_rseg_loader_type *rseg_loader,
     const RSTHead &header, int well_nr, int segment_index, int segment_id);
 bool well_segment_well_is_MSW(int well_nr, const rd_kw_type *iwel_kw,
                               const RSTHead &rst_head);
 
-const std::vector<well_conn_type *> *
+const std::vector<std::shared_ptr<WellConnection>> *
 well_segment_get_connections(const well_segment_type *segment,
                              const char *grid_name);
-const std::vector<well_conn_type *> *
+const std::vector<std::shared_ptr<WellConnection>> *
 well_segment_get_global_connections(const well_segment_type *segment);
-#endif
-#endif

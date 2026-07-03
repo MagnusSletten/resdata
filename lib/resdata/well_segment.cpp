@@ -22,7 +22,8 @@ struct well_segment_struct {
     int branch_id;
     int outlet_segment_id; // This is in the global index space given by the ISEG keyword.
     well_segment_type *outlet_segment;
-    std::map<std::string, std::vector<well_conn_type *>> connections;
+    std::map<std::string, std::vector<std::shared_ptr<WellConnection>>>
+        connections;
 
     double
         depth; // The depth of the segment node; furthest away from the wellhead.
@@ -172,8 +173,9 @@ bool well_segment_has_global_grid_connections(
 }
 
 bool well_segment_add_connection(well_segment_type *segment,
-                                 const char *grid_name, well_conn_type *conn) {
-    int conn_segment_id = well_conn_get_segment_id(conn);
+                                 const char *grid_name,
+                                 std::shared_ptr<WellConnection> conn) {
+    int conn_segment_id = conn->get_segment_id();
     if (conn_segment_id == segment->segment_id) {
         segment->connections[grid_name].push_back(conn);
         return true;
@@ -181,14 +183,14 @@ bool well_segment_add_connection(well_segment_type *segment,
         return false;
 }
 
-const std::vector<well_conn_type *> *
+const std::vector<std::shared_ptr<WellConnection>> *
 well_segment_get_connections(const well_segment_type *segment,
                              const char *grid_name) {
     auto it = segment->connections.find(grid_name);
     return it != segment->connections.end() ? &it->second : nullptr;
 }
 
-const std::vector<well_conn_type *> *
+const std::vector<std::shared_ptr<WellConnection>> *
 well_segment_get_global_connections(const well_segment_type *segment) {
     return well_segment_get_connections(segment, RD_GRID_GLOBAL_GRID);
 }

@@ -109,16 +109,15 @@ class WellState {
     double volume_rate;
     ert_rd_unit_enum unit_system;
 
-    std::map<std::string, std::vector<well_conn_ptr>> connections;
+    std::map<std::string, std::vector<std::shared_ptr<WellConnection>>>
+        connections;
     well_segment_collection_ptr segments{nullptr, well_segment_collection_free};
     well_branch_collection_ptr branches{nullptr, well_branch_collection_free};
 
-    // The index_wellhead will own the reference to the well_conn
-    // and the name_wellhead has a non-owning reference
-    std::vector<well_conn_ptr>
-        index_wellhead; // An well_conn_type instance representing the wellhead - indexed by grid_nr.
-    std::map<std::string, well_conn_type *>
-        name_wellhead; // An well_conn_type instance representing the wellhead - indexed by lgr_name.
+    std::vector<std::shared_ptr<WellConnection>>
+        index_wellhead; // A WellConnection for the wellhead - indexed by grid_nr.
+    std::map<std::string, std::shared_ptr<WellConnection>>
+        name_wellhead; // A WellConnection for the wellhead - indexed by lgr_name.
 
     void add_wellhead(const RSTHead &header, const rd_kw_type *iwel_kw,
                       int well_nr, const std::string &grid_name, int grid_nr);
@@ -130,7 +129,7 @@ class WellState {
     void add_global_connections(const rd_file_view_type *rst_view, int well_nr);
     void add_LGR_connections(const rd_grid_type *grid,
                              rd_file_view_type *file_view);
-    well_conn_type *get_wellhead(const std::string &grid_name) {
+    std::shared_ptr<WellConnection> get_wellhead(const std::string &grid_name) {
         const auto it = name_wellhead.find(grid_name);
         return it != name_wellhead.end() ? it->second : nullptr;
     }
@@ -171,7 +170,7 @@ public:
 
     well_branch_collection_type *get_branches() { return branches.get(); }
 
-    well_conn_type *get_global_wellhead() {
+    std::shared_ptr<WellConnection> get_global_wellhead() {
         return get_wellhead(RD_GRID_GLOBAL_GRID);
     }
 
@@ -194,12 +193,13 @@ public:
     read_wells_in_restart(rd_file_view_type *file_view,
                           const rd_grid_type *grid, int report_nr,
                           int global_well_nr, bool load_segment_information);
-    std::vector<well_conn_ptr> *
+    std::vector<std::shared_ptr<WellConnection>> *
     get_grid_connections(const std::string &grid_name) {
         auto it = connections.find(grid_name);
         return it != connections.end() ? &it->second : nullptr;
     }
-    const std::vector<well_conn_ptr> *get_global_connections() {
+    const std::vector<std::shared_ptr<WellConnection>> *
+    get_global_connections() {
         return get_grid_connections(RD_GRID_GLOBAL_GRID);
     }
 };

@@ -1,3 +1,4 @@
+
 #include "resdata/rd_file_view.hpp"
 #include <cstdlib>
 #include <ctime>
@@ -13,6 +14,7 @@
 #include <utility>
 #include <vector>
 #include <map>
+#include <iostream>
 #include <fmt/format.h>
 
 #include <resdata/rd_rsthead.hpp>
@@ -46,12 +48,12 @@ WellState::WellState(std::string well_name, int global_well_nr, bool open,
 void WellState::add_wellhead(const RSTHead &header, const rd_kw_type *iwel_kw,
                              int well_nr, const std::string &grid_name,
                              int grid_nr) {
-    well_conn_ptr wellhead(well_conn_alloc_wellhead(iwel_kw, header, well_nr));
+    auto wellhead = WellConnection::read_wellhead(iwel_kw, header, well_nr);
 
     if (wellhead) {
         if (grid_nr >= static_cast<int>(this->index_wellhead.size()))
             this->index_wellhead.resize(grid_nr + 1);
-        this->name_wellhead[grid_name] = wellhead.get();
+        this->name_wellhead[grid_name] = wellhead;
         this->index_wellhead[grid_nr] = std::move(wellhead);
     }
 }
@@ -179,10 +181,15 @@ void WellState::add_connections(const rd_file_view_type *rst_view,
                 rd_kw_iget_int(iwel_kw, iwel_offset + IWEL_CONNECTIONS_INDEX);
 
             for (int iconn = 0; iconn < num_connections; iconn++) {
-                well_conn_ptr conn(well_conn_alloc_from_kw(
-                    icon_kw, scon_kw, xcon_kw, header, well_nr, iconn));
-                if (conn)
-                    this->connections[grid_name].push_back(std::move(conn));
+                try {
+                    this->connections[grid_name].push_back(
+                        WellConnection::from_keywords(icon_kw, scon_kw, xcon_kw,
+                                                      header, well_nr, iconn));
+                } catch (InvalidDirection &e) {
+                    std::cerr << e.what() << std::endl;
+                } catch (InvalidConnection &e) {
+                    std::cerr << e.what() << std::endl;
+                }
             }
         }
     }

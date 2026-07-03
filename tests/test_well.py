@@ -825,6 +825,7 @@ def test_that_a_multisegment_well_exposes_its_segments(tmp_path, grid):
     assert well_state.hasSegmentData()
     assert well_state.numSegments() == 3
     assert len(well_state) == 3
+    assert well_state.igetSegment(0) == well_state[0]
 
     segments = well_state.segments()
     assert [segment.id() for segment in segments] == [

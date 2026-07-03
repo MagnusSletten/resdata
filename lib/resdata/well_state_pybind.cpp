@@ -1,7 +1,5 @@
 #include <cstdint>
 
-#include <algorithm>
-#include <iterator>
 #include <string>
 #include <vector>
 #include <pybind11/pybind11.h>
@@ -30,11 +28,10 @@ PYBIND11_MODULE(well_state, m) {
         .def("wellHead",
              [](py::object py_self) -> py::object {
                  auto &self = py_self.cast<WellState &>();
-                 const well_conn_type *wellhead = self.get_global_wellhead();
+                 auto wellhead = self.get_global_wellhead();
                  if (!wellhead)
                      return py::none();
-                 return WellConnection().attr("createCReference")(
-                     reinterpret_cast<std::uintptr_t>(wellhead), self);
+                 return py::cast(wellhead);
              })
         .def("wellNumber", &WellState::get_well_nr)
         .def("reportNumber", &WellState::get_report_nr)
@@ -49,19 +46,12 @@ PYBIND11_MODULE(well_state, m) {
         .def("hasGlobalConnections", &WellState::has_global_connections)
         .def(
             "globalConnections",
-            [](py::object py_self) {
-                auto &self = py_self.cast<WellState &>();
-                auto well_conns = self.get_global_connections();
-                std::vector<py::object> result;
-                if (!well_conns)
-                    return result;
-                std::transform(
-                    well_conns->begin(), well_conns->end(),
-                    std::back_inserter(result), [py_self](auto &p) {
-                        return WellConnection().attr("createCReference")(
-                            reinterpret_cast<std::uintptr_t>(p.get()), py_self);
-                    });
-                return result;
+            [](WellState &self) {
+                if (auto connections = self.get_global_connections())
+                    return connections;
+                else
+                    return new const std::vector<
+                        std::shared_ptr<WellConnection>>();
             },
             "The list of well connections for the global grid.\n"
             "\n"
@@ -81,7 +71,7 @@ PYBIND11_MODULE(well_state, m) {
                     well_segment_type *segment =
                         well_segment_collection_iget(segments, i);
                     result.push_back(WellSegment().attr("createCReference")(
-                        reinterpret_cast<std::uintptr_t>(segment), self));
+                        reinterpret_cast<std::uintptr_t>(segment), py_self));
                 }
                 return result;
             },
@@ -103,8 +93,9 @@ PYBIND11_MODULE(well_state, m) {
                                     index.cast<long>(), size));
                 return WellSegment().attr("createCReference")(
                     reinterpret_cast<std::uintptr_t>(
-                        well_segment_collection_iget(segments, index)),
-                    self);
+                        well_segment_collection_iget(segments,
+                                                     index.cast<int>())),
+                    py_self);
             },
             py::arg("idx"))
         .def(

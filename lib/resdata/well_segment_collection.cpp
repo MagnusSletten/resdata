@@ -142,13 +142,13 @@ void well_segment_collection_link(
 
 void well_segment_collection_add_connections(
     well_segment_collection_type *segment_collection, const char *grid_name,
-    const std::vector<well_conn_ptr> &connections) {
+    const std::vector<std::shared_ptr<WellConnection>> &connections) {
     for (const auto &conn : connections) {
-        if (well_conn_MSW(conn.get())) {
-            int segment_id = well_conn_get_segment_id(conn.get());
+        if (conn->is_MSW()) {
+            int segment_id = conn->get_segment_id();
             well_segment_type *segment =
                 well_segment_collection_get(segment_collection, segment_id);
-            well_segment_add_connection(segment, grid_name, conn.get());
+            well_segment_add_connection(segment, grid_name, conn);
         }
     }
 }

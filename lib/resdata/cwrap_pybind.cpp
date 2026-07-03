@@ -270,22 +270,6 @@ template <> rd_region_type *from_cwrap<rd_region_type>(py::handle obj) {
     return cast_cwrap<rd_region_type>(obj);
 }
 
-py::object WellConnection() {
-    static py::object cls;
-    if (!cls) {
-        cls = py::module_::import("resdata.well").attr("WellConnection");
-    }
-    return cls;
-}
-
-template <> well_conn_type *from_cwrap<well_conn_type>(py::handle obj) {
-    if (!py::isinstance(obj, WellConnection()))
-        throw py::type_error("Expected WellConnection, got " +
-                             static_cast<std::string>(py::repr(obj)));
-
-    return cast_cwrap<well_conn_type>(obj);
-}
-
 py::object WellSegment() {
     static py::object cls;
     if (!cls) {

@@ -47,7 +47,7 @@ int well_segment_collection_load_from_kw(
     bool load_segment_information, bool *is_MSW_well);
 void well_segment_collection_add_connections(
     well_segment_collection_type *segment_collection, const char *grid_name,
-    const std::vector<well_conn_ptr> &connections);
+    const std::vector<std::shared_ptr<WellConnection>> &connections);
 
 using well_segment_collection_ptr =
     std::unique_ptr<well_segment_collection_type,
