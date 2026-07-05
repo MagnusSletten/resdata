@@ -83,11 +83,30 @@ rd_subsidence_survey_alloc_PRESSURE(rd_subsidence_type *rd_subsidence,
     rd_kw_type *pressure_kw = rd_file_view_iget_named_kw(
         restart_view, PRESSURE_KW, 0); /*Active indexing*/
 
+    if (init_porv_kw == nullptr)
+        throw std::invalid_argument("Missing required PORV keyword in INIT");
+    if (pressure_kw == nullptr)
+        throw std::invalid_argument(
+            "Missing required PRESSURE keyword in restart file");
+
+    if (rd_kw_get_size(init_porv_kw) <= global_index.back())
+        throw std::invalid_argument(
+            "PORV keyword size is too small for global indexing");
+    if (rd_kw_get_size(pressure_kw) < size)
+        throw std::invalid_argument(
+            "PRESSURE keyword size is too small for active cell indexing");
+
     rd_kw_type *rporv_kw = nullptr;
     if (rd_file_view_has_kw(restart_view, RPORV_KW)) {
         survey->dynamic_porevolume =
             std::vector<double>(rd_subsidence->grid_cache->size(), 0.0);
         rporv_kw = rd_file_view_iget_named_kw(restart_view, RPORV_KW, 0);
+        if (rporv_kw == nullptr)
+            throw std::invalid_argument(
+                "RPORV keyword lookup failed despite keyword presence");
+        if (rd_kw_get_size(rporv_kw) < size)
+            throw std::invalid_argument(
+                "RPORV keyword size is too small for active cell indexing");
     }
 
     for (int active_index = 0; active_index < size; active_index++) {

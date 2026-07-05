@@ -34,3 +34,4 @@ scratch.sparsebundle
 /dist-*
 
 CMakeSettings.json
+.venv

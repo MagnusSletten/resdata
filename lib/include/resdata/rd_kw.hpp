@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <ert/util/type_macros.hpp>
 
@@ -250,6 +251,7 @@ inline rd_kw_ptr make_rd_kw(const char *header, int size,
 }
 
 inline std::string rd_kw_iget_stripped_string(const rd_kw_type *kw, int index) {
-    return rd::strip_spaces(
-        static_cast<const char *>(rd_kw_iget_ptr(kw, index)));
+    const char *raw = static_cast<const char *>(rd_kw_iget_ptr(kw, index));
+    const size_t width = rd_type_get_sizeof_iotype(rd_kw_get_data_type(kw));
+    return rd::strip_spaces(std::string(std::string_view(raw, width)));
 }

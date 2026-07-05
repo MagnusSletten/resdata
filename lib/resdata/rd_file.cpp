@@ -465,6 +465,9 @@ double rd_file_iget_restart_sim_days(const rd_file_type *restart_file,
 
 rd_version_enum rd_file_get_rd_version(const rd_file_type *file) {
     rd_kw_type *intehead_kw = rd_file_iget_named_kw(file, INTEHEAD_KW, 0);
+    if (intehead_kw == NULL)
+        util_abort("%s: failed to load required keyword %s\n", __func__,
+                   INTEHEAD_KW);
     int int_value = rd_kw_iget_int(intehead_kw, INTEHEAD_IPROG_INDEX);
 
     if (int_value == INTEHEAD_ECLIPSE100_VALUE)
@@ -499,6 +502,9 @@ rd_version_enum rd_file_get_rd_version(const rd_file_type *file) {
 
 int rd_file_get_phases(const rd_file_type *init_file) {
     rd_kw_type *intehead_kw = rd_file_iget_named_kw(init_file, INTEHEAD_KW, 0);
+    if (intehead_kw == NULL)
+        util_abort("%s: failed to load required keyword %s\n", __func__,
+                   INTEHEAD_KW);
     int phases = rd_kw_iget_int(intehead_kw, INTEHEAD_PHASE_INDEX);
     return phases;
 }

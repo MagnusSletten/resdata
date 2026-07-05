@@ -10,10 +10,7 @@ CMAKE_ARGS="-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF" pip install .
 Run with
 
 ```
-LD_PRELOAD="$(python -c
- "import atheris; print(atheris.path())")/asan_with_fuzzer.so" python 
-tests/fuzzing/smry_fuzz_target.py -detect_leaks=0 -max_len=22000000 -r
-ss_limit_mb=32000000000 tests/fuzzing/smry_corpus/
+LD_PRELOAD="$(python -c "import atheris; print(atheris.path())")/asan_with_fuzzer.so" python tests/fuzzing/smry_fuzz_target.py -detect_leaks=0 -max_len=22000000 -rss_limit_mb=32000000000 tests/fuzzing/smry_corpus/
 ```
 
 Its beneficial to also use

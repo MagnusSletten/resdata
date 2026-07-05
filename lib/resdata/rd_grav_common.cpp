@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cmath>
+#include <stdexcept>
 
 #include <ert/util/util.hpp>
 
@@ -27,6 +28,11 @@ bool *rd_grav_common_alloc_aquifer_cell(const rd::rd_grid_cache &grid_cache,
     if (rd_file_has_kw(init_file, AQUIFER_KW)) {
         rd_kw_type *aquifer_kw =
             rd_file_iget_named_kw(init_file, AQUIFER_KW, 0);
+        if (aquifer_kw == NULL)
+            throw std::invalid_argument(
+                "AQUIFER keyword lookup failed despite keyword presence");
+        if (rd_kw_get_size(aquifer_kw) < grid_cache.size())
+            throw std::invalid_argument("AQUIFER keyword size is too small");
         const int *aquifer_data = rd_kw_get_int_ptr(aquifer_kw);
 
         for (int active_index = 0; active_index < grid_cache.size();

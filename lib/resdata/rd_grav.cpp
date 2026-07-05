@@ -220,6 +220,10 @@ rd_grav_phase_alloc(rd_grav_type *rd_grav, rd_grav_survey_type *survey,
         if (calc_type == GRAV_CALC_FIP) {
             rd_kw_type *pvtnum_kw =
                 rd_file_iget_named_kw(init_file, PVTNUM_KW, 0);
+            if (pvtnum_kw == NULL) {
+                rd_grav_phase_free(grav_phase);
+                throw std::invalid_argument("Missing required PVTNUM keyword");
+            }
             const std::vector<double> std_density =
                 rd_grav->std_density[std::string(rd_get_phase_name(phase))];
 
@@ -231,6 +235,11 @@ rd_grav_phase_alloc(rd_grav_type *rd_grav, rd_grav_survey_type *survey,
                 fip_kw = rd_file_view_iget_named_kw(restart_file, FIPGAS_KW, 0);
             else
                 fip_kw = rd_file_view_iget_named_kw(restart_file, FIPWAT_KW, 0);
+
+            if (fip_kw == NULL) {
+                rd_grav_phase_free(grav_phase);
+                throw std::invalid_argument("Missing required FIP keyword");
+            }
 
             for (int iactive = 0; iactive < size; iactive++) {
                 double fip = rd_kw_iget_as_double(fip_kw, iactive);
@@ -246,6 +255,10 @@ rd_grav_phase_alloc(rd_grav_type *rd_grav, rd_grav_survey_type *survey,
             const char *den_kw_name = get_den_kw(phase, rd_version);
             const rd_kw_type *den_kw =
                 rd_file_view_iget_named_kw(restart_file, den_kw_name, 0);
+            if (den_kw == NULL) {
+                rd_grav_phase_free(grav_phase);
+                throw std::invalid_argument("Missing required density keyword");
+            }
 
             if (calc_type == GRAV_CALC_RFIP) {
                 rd_kw_type *rfip_kw;
@@ -258,6 +271,11 @@ rd_grav_phase_alloc(rd_grav_type *rd_grav, rd_grav_survey_type *survey,
                 else
                     rfip_kw =
                         rd_file_view_iget_named_kw(restart_file, RFIPWAT_KW, 0);
+
+                if (rfip_kw == NULL) {
+                    rd_grav_phase_free(grav_phase);
+                    throw std::invalid_argument("Missing required RFIP keyword");
+                }
 
                 {
                     int iactive;
@@ -278,6 +296,11 @@ rd_grav_phase_alloc(rd_grav_type *rd_grav, rd_grav_survey_type *survey,
                     /* We are targeting the residual phase, e.g. the OIL phase in a three phase system. */
                     const rd_kw_type *swat_kw =
                         rd_file_view_iget_named_kw(restart_file, "SWAT", 0);
+                    if (swat_kw == NULL) {
+                        rd_grav_phase_free(grav_phase);
+                        throw std::invalid_argument(
+                            "Missing required SWAT keyword for residual saturation");
+                    }
                     sat_kw = rd_kw_alloc_copy(swat_kw);
                     rd_kw_scalar_set_float(sat_kw, 1.0);
                     rd_kw_inplace_sub(sat_kw, swat_kw); /* sat = 1 - SWAT */

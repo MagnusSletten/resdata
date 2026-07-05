@@ -653,6 +653,9 @@ static void rd_smspec_load_restart(rd_smspec_type *rd_smspec,
     if (!rd_file_has_kw(header, RESTART_KW))
         return;
     const rd_kw_type *restart_kw = rd_file_iget_named_kw(header, RESTART_KW, 0);
+    if (restart_kw == NULL)
+        throw std::invalid_argument(
+            "RESTART keyword lookup failed despite keyword presence");
     int num_blocks = rd_kw_get_size(restart_kw);
     num_blocks = (num_blocks < 0) ? 0 : num_blocks;
     auto tmp_base = rd::checked_calloc<char>(8 * num_blocks + 1);
@@ -871,17 +874,62 @@ static bool rd_smspec_fread_header(rd_smspec_type *rd_smspec,
 
         int params_index;
         rd_smspec->num_regions = 0;
-        rd_smspec->params_size = rd_kw_get_size(keywords);
+
+        if (wells == NULL)
+            throw std::invalid_argument(
+                "Could not locate WGNAMES/NAMES keyword in header");
+        if (keywords == NULL)
+            throw std::invalid_argument(
+                "Could not locate KEYWORDS keyword in header");
         if (startdat == NULL)
             throw std::invalid_argument(
                 "Could not locate STARTDAT keyword in header");
+        if (units == NULL)
+            throw std::invalid_argument(
+                "Could not locate UNITS keyword in header");
+        if (dimens == NULL)
+            throw std::invalid_argument(
+                "Could not locate DIMENS keyword in header");
+
+        const int wells_size = rd_kw_get_size(wells);
+        const int keywords_size = rd_kw_get_size(keywords);
+        const int units_size = rd_kw_get_size(units);
+        if (wells_size != keywords_size || wells_size != units_size)
+            throw std::invalid_argument(fmt::format(
+                "Inconsistent SMSPEC header vector sizes: WGNAMES/NAMES={}, KEYWORDS={}, UNITS={}",
+                wells_size, keywords_size, units_size));
+
+        const int startdat_size = rd_kw_get_size(startdat);
+        if (startdat_size != 3 && startdat_size != 6)
+            throw std::invalid_argument(fmt::format(
+                "Invalid STARTDAT size {}, expected 3 or 6", startdat_size));
+
+        const int dimens_size = rd_kw_get_size(dimens);
+        const int required_dimens_size = DIMENS_SMSPEC_RESTART_STEP_INDEX + 1;
+        if (dimens_size < required_dimens_size)
+            throw std::invalid_argument(fmt::format(
+                "DIMENS size {} is smaller than required {}", dimens_size,
+                required_dimens_size));
+
+        rd_smspec->params_size = keywords_size;
 
         if (rd_file_has_kw(header.get(), NUMS_KW))
             nums = rd_file_iget_named_kw(header.get(), NUMS_KW, 0);
 
+        if (nums != NULL && rd_kw_get_size(nums) != wells_size)
+            throw std::invalid_argument(fmt::format(
+                "Inconsistent NUMS size {}, expected {}", rd_kw_get_size(nums),
+                wells_size));
+
         if (rd_file_has_kw(header.get(), INTEHEAD_KW)) {
             const rd_kw_type *intehead =
                 rd_file_iget_named_kw(header.get(), INTEHEAD_KW, 0);
+            if (intehead == NULL)
+                throw std::invalid_argument(
+                    "INTEHEAD keyword lookup failed despite keyword presence");
+            if (rd_kw_get_size(intehead) <= INTEHEAD_SMSPEC_UNIT_INDEX)
+                throw std::invalid_argument(
+                    "INTEHEAD keyword size is too small for unit-system index");
             rd_smspec->unit_system = (ert_rd_unit_enum)rd_kw_iget_int(
                 intehead, INTEHEAD_SMSPEC_UNIT_INDEX);
             /*
@@ -903,6 +951,19 @@ static bool rd_smspec_fread_header(rd_smspec_type *rd_smspec,
             numlx = rd_file_iget_named_kw(header.get(), NUMLX_KW, 0);
             numly = rd_file_iget_named_kw(header.get(), NUMLY_KW, 0);
             numlz = rd_file_iget_named_kw(header.get(), NUMLZ_KW, 0);
+
+            if (lgrs == NULL || numlx == NULL || numly == NULL || numlz == NULL)
+                throw std::invalid_argument(
+                    "SMSPEC header LGR keyword lookup failed despite keyword presence");
+            if (rd_kw_get_size(lgrs) != wells_size ||
+                rd_kw_get_size(numlx) != wells_size ||
+                rd_kw_get_size(numly) != wells_size ||
+                rd_kw_get_size(numlz) != wells_size)
+                throw std::invalid_argument(fmt::format(
+                    "Inconsistent LGR keyword sizes: LGRS={}, NUMLX={}, NUMLY={}, NUMLZ={}, expected {}",
+                    rd_kw_get_size(lgrs), rd_kw_get_size(numlx),
+                    rd_kw_get_size(numly), rd_kw_get_size(numlz), wells_size));
+
             rd_smspec->has_lgr = true;
         } else
             rd_smspec->has_lgr = false;
@@ -915,7 +976,7 @@ static bool rd_smspec_fread_header(rd_smspec_type *rd_smspec,
             int hour = 0;
             int min = 0;
             int sec = 0;
-            if (rd_kw_get_size(startdat) == 6) {
+            if (startdat_size == 6) {
                 hour = date[STARTDAT_HOUR_INDEX];
                 min = date[STARTDAT_MINUTE_INDEX];
                 sec = date[STARTDAT_MICRO_SECOND_INDEX] / 1000000;
@@ -931,13 +992,26 @@ static bool rd_smspec_fread_header(rd_smspec_type *rd_smspec,
             rd_kw_iget_int(dimens, DIMENS_SMSPEC_NY_INDEX);
         rd_smspec->grid_dims[2] =
             rd_kw_iget_int(dimens, DIMENS_SMSPEC_NZ_INDEX);
+
+        if (rd_smspec->grid_dims[0] <= 0 || rd_smspec->grid_dims[1] <= 0 ||
+            rd_smspec->grid_dims[2] <= 0)
+            throw std::invalid_argument(fmt::format(
+                "Invalid DIMENS grid dimensions NX={}, NY={}, NZ={} (must all be > 0)",
+                rd_smspec->grid_dims[0], rd_smspec->grid_dims[1],
+                rd_smspec->grid_dims[2]));
+
+        const int64_t total_grid_cells =
+            static_cast<int64_t>(rd_smspec->grid_dims[0]) *
+            static_cast<int64_t>(rd_smspec->grid_dims[1]) *
+            static_cast<int64_t>(rd_smspec->grid_dims[2]);
+
         rd_smspec->restart_step =
             rd_kw_iget_int(dimens, DIMENS_SMSPEC_RESTART_STEP_INDEX);
 
         rd_get_file_type(header_file.c_str(), &rd_smspec->formatted, NULL);
 
         {
-            for (params_index = 0; params_index < rd_kw_get_size(wells);
+              for (params_index = 0; params_index < wells_size;
                  params_index++) {
                 float default_value = PARAMS_GLOBAL_DEFAULT;
                 int num = SMSPEC_NUMS_INVALID;
@@ -977,13 +1051,21 @@ static bool rd_smspec_fread_header(rd_smspec_type *rd_smspec,
                             params_index, kw.c_str(), well.c_str(),
                             unit.c_str(), lgr_name.c_str(), lgr_i, lgr_j, lgr_k,
                             default_value, rd_smspec->key_join_string.c_str()));
-                } else
+                } else {
+                    if ((var_type == RD_SMSPEC_BLOCK_VAR ||
+                         var_type == RD_SMSPEC_COMPLETION_VAR) &&
+                        (num < 1 || static_cast<int64_t>(num) > total_grid_cells))
+                        throw std::invalid_argument(fmt::format(
+                            "Invalid NUM value {} for {} variable; expected range [1, {}]",
+                            num, kw, total_grid_cells));
+
                     rd_smspec_insert_node(
                         rd_smspec,
                         std::make_unique<rd::smspec_node>(
                             params_index, kw.c_str(), well.c_str(), num,
                             unit.c_str(), rd_smspec->grid_dims, default_value,
                             rd_smspec->key_join_string.c_str()));
+                }
             }
         }
 
